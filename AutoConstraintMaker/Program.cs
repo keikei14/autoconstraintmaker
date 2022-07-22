@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using MikuMikuLibrary.IO;
@@ -12,7 +13,7 @@ using MikuMikuLibrary.Skeletons;
 using MikuMikuLibrary.Databases;
 using MikuMikuLibrary.Objects.Extra.Blocks;
 using MikuMikuLibrary.Extensions;
-using System.Numerics;
+
 
 namespace AutoConstraintMaker
 {
