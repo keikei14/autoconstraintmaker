@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using MikuMikuLibrary.IO;
@@ -13,7 +12,7 @@ using MikuMikuLibrary.Skeletons;
 using MikuMikuLibrary.Databases;
 using MikuMikuLibrary.Objects.Extra.Blocks;
 using MikuMikuLibrary.Extensions;
-
+using System.Numerics;
 
 namespace AutoConstraintMaker
 {
@@ -84,6 +83,67 @@ namespace AutoConstraintMaker
             {"右足ＩＫ", "e_sune_r_cp"},
         };
 
+        static Dictionary<string, string> sourceToDivaBon = new Dictionary<string, string>()
+        {
+            {"bip_pelvis", "kl_kosi_etc_wj"},
+            {"bip_spine_0", "n_hara_b_wj_ex"},
+            {"bip_spine_1", "n_hara_c_wj_ex"},
+            {"bip_spine_2", "kl_mune_b_wj"},
+            {"bip_spine_3", "kl_mune_b_wj"},
+            {"bip_neck", "n_kubi_wj_ex"},
+            {"bip_head", "j_kao_wj"},
+            {"bip_collar_L", "kl_waki_l_wj"},
+            {"bip_upperArm_L", "n_skata_l_wj_cd_ex"},
+            {"bip_lowerArm_L", "n_sude_l_wj_ex"},
+            {"bip_hand_L", "kl_te_l_wj"},
+            {"bip_thumb_0_L", "nl_oya_l_wj"},
+            {"bip_thumb_1_L", "nl_oya_b_l_wj"},
+            {"bip_thumb_2_L", "nl_oya_c_l_wj"},
+            {"bip_index_0_L", "nl_hito_l_wj"},
+            {"bip_index_1_L", "nl_hito_b_l_wj"},
+            {"bip_index_2_L", "nl_hito_c_l_wj"},
+            {"bip_middle_0_L", "nl_naka_l_wj"},
+            {"bip_middle_1_L", "nl_naka_b_l_wj"},
+            {"bip_middle_2_L", "nl_naka_c_l_wj"},
+            {"bip_ring_0_L", "nl_kusu_l_wj"},
+            {"bip_ring_1_L", "nl_kusu_b_l_wj"},
+            {"bip_ring_2_L", "nl_kusu_c_l_wj"},
+            {"bip_pinky_0_L", "nl_ko_l_wj"},
+            {"bip_pinky_1_L", "nl_ko_b_l_wj"},
+            {"bip_pinky_2_L", "nl_ko_c_l_wj"},
+            {"bip_collar_R", "kl_waki_r_wj"},
+            {"bip_upperArm_R", "n_skata_r_wj_cd_ex"},
+            {"bip_lowerArm_R", "n_sude_r_wj_ex"},
+            {"bip_hand_R", "kl_te_r_wj"},
+            {"bip_thumb_0_R", "nl_oya_r_wj"},
+            {"bip_thumb_1_R", "nl_oya_b_r_wj"},
+            {"bip_thumb_2_R", "nl_oya_c_r_wj"},
+            {"bip_index_0_R", "nl_hito_r_wj"},
+            {"bip_index_1_R", "nl_hito_b_r_wj"},
+            {"bip_index_2_R", "nl_hito_c_r_wj"},
+            {"bip_middle_0_R", "nl_naka_r_wj"},
+            {"bip_middle_1_R", "nl_naka_b_r_wj"},
+            {"bip_middle_2_R", "nl_naka_c_r_wj"},
+            {"bip_ring_0_R", "nl_kusu_r_wj"},
+            {"bip_ring_1_R", "nl_kusu_b_r_wj"},
+            {"bip_ring_2_R", "nl_kusu_c_r_wj"},
+            {"bip_pinky_0_R", "nl_ko_r_wj"},
+            {"bip_pinky_1_R", "nl_ko_b_r_wj"},
+            {"bip_pinky_2_R", "nl_ko_c_r_wj"},
+            {"bip_hip_L", "n_momo_a_l_wj_cd_ex"},
+            {"bip_knee_L", "j_sune_l_wj"},
+            {"bip_hip_R", "n_momo_a_r_wj_cd_ex"},
+            {"bip_knee_R", "j_sune_r_wj"},
+            
+        };
+
+        static Dictionary<string, string> sourceFeetToDivaFeetBon = new Dictionary<string, string>()
+        {
+            {"bip_foot_L", "n_nude_asi_l_wj_ex"},
+            {"bip_foot_R", "n_nude_asi_r_wj_ex"},
+            {"bip_toe_L", "n_nude_toe_l_wj_ex"},
+            {"bip_toe_R", "n_nude_toe_r_wj_ex"},
+        };
 
         // arg 0: target obj farc
         // arg 1: base obj farc for bone orientations
@@ -99,7 +159,7 @@ namespace AutoConstraintMaker
             var baseObjBinSrc = baseObjFarc.Open(baseObjFarc.First(x => x.EndsWith("_obj.bin")), EntryStreamMode.MemoryStream);
             var baseObjSet = BinaryFile.Load<ObjectSet>(baseObjBinSrc);
 
-            var blocks = new List<MikuMikuLibrary.Objects.Extra.IBlock>();
+            var blocks = new List<NodeBlock>();
             var memStream = new MemoryStream();
 
             foreach (var obj in objSet.Objects)
@@ -109,7 +169,7 @@ namespace AutoConstraintMaker
                 // to the target obj farc (arg 0)
                 foreach (var bone in obj.Skin.Bones)
                 {
-                    mmdDivaBon.TryGetValue(bone.Name, out var srcbonename);
+                    sourceToDivaBon.TryGetValue(bone.Name, out var srcbonename);
                     var srcbone = baseObjSet.Objects[0].Skin.Bones.FirstOrDefault(x => x.Name == srcbonename);
 
                     if (srcbone == null)
@@ -136,7 +196,7 @@ namespace AutoConstraintMaker
                 {
                     Name = "RootBone",
                     ParentName = "n_hara_cp",
-                    Position = new Vector3(0, (float)-1.2, 0),
+                    Position = new Vector3(0, -1.03f, 0),
                     Rotation = new Vector3(0, 0, 0),
                     Scale = Vector3.One,
                 };
@@ -154,24 +214,22 @@ namespace AutoConstraintMaker
                 // main constraint making
                 foreach (var bone in obj.Skin.Bones)
                 {
-                    if (mmdDivaBon.TryGetValue(bone.Name, out string sourceNodeName))
+
+                    Matrix4x4.Invert(bone.InverseBindPoseMatrix, out var bindPoseMatrix);
+                    var matrix = Matrix4x4.Multiply(bindPoseMatrix,
+                        bone.Parent?.InverseBindPoseMatrix ?? Matrix4x4.Identity);
+
+                    Matrix4x4.Decompose(matrix, out var scale, out var rotation, out var translation);
+                    rotation = Quaternion.Normalize(rotation);
+
+                    if (bone.Parent == null)
+                        bone.Parent = new BoneInfo()
+                        {
+                            Name = "RootBone"
+                        };
+
+                    if (sourceToDivaBon.TryGetValue(bone.Name, out string sourceNodeName))
                     {
-                        if (sourceNodeName.StartsWith("e_"))
-                            continue;
-
-                        Matrix4x4.Invert(bone.InverseBindPoseMatrix, out var bindPoseMatrix);
-                        var matrix = Matrix4x4.Multiply(bindPoseMatrix,
-                            bone.Parent?.InverseBindPoseMatrix ?? Matrix4x4.Identity);
-
-                        Matrix4x4.Decompose(matrix, out var scale, out var rotation, out var translation);
-                        rotation = Quaternion.Normalize(rotation);
-
-                        if (bone.Parent == null)
-                            bone.Parent = new BoneInfo()
-                            {
-                                Name = "RootBone"
-                            };
-
                         var oriConstraintBlock = new ConstraintBlock
                         {
                             Name = bone.Name,
@@ -184,12 +242,38 @@ namespace AutoConstraintMaker
                             SourceNodeName = sourceNodeName
                         };
                         blocks.Add(oriConstraintBlock);
-
-
+                    }
+                    else // If bone is not in constraint map, make dummy expression block instead
+                    {
+                        var dummyExpBlock = new ExpressionBlock
+                        {
+                            Name = bone.Name,
+                            ParentName = bone.Parent.Name,
+                            Position = translation,
+                            Rotation = rotation.ToEulerAngles(),
+                            Scale = scale,
+                        };
+                        dummyExpBlock.Expressions.Add("");
+                        blocks.Add(dummyExpBlock);
                     }
                 }
 
-                obj.Skin.Blocks.AddRange(blocks);
+                // sort
+                var sortedBlocks = new List<NodeBlock>();
+                AddRecursively(blocks.FirstOrDefault(x => x is NodeBlock nodeBlock && nodeBlock.ParentName == "n_hara_cp"));
+                void AddRecursively(NodeBlock block)
+                {
+                    if (block is ConstraintBlock cnsBlock)
+                        cnsBlock.Coupling = Coupling.Soft;
+
+                    sortedBlocks.Add(block);
+
+                    foreach (var alsoBlock in blocks.OfType<NodeBlock>()
+                                 .Where(x => x.ParentName == block.Name || (block is OsageBlock osgBlock && x.ParentName == osgBlock.Nodes[0].Name))
+                                 .OrderBy(x => x.Name))
+                        AddRecursively(alsoBlock);
+                }
+                obj.Skin.Blocks.AddRange(sortedBlocks);
             }
 
             objSet.Save(memStream, true);
